@@ -214,7 +214,7 @@ if ($uri === '/api/debug' && $method === 'GET') {
 }
 
 // VIDEO STREAM
-if ($method === 'GET' && preg_match('#^/api/videos/(.+)$#', $uri, $matches)) {
+if (($method === 'GET' || $method === 'HEAD') && preg_match('#^/api/videos/(.+)$#', $uri, $matches)) {
 
     $videoFile = rawurlencode($matches[1]);
 
