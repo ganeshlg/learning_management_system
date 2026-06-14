@@ -80,8 +80,23 @@ function proxyRequest($serviceUrl)
 {
     $payload = file_get_contents("php://input");
     $headers = getForwardHeaders('application/json');
+    $responseHeaders = [];
 
     $ch = curl_init();
+
+    $headerFunction = function ($curl, $headerLine) use (&$responseHeaders) {
+        $trim = trim($headerLine);
+        if ($trim === '' || stripos($trim, 'HTTP/') === 0) {
+            return strlen($headerLine);
+        }
+
+        [$name, $value] = array_map('trim', explode(':', $trim, 2) + [null, null]);
+        if ($name !== null && $value !== null) {
+            $responseHeaders[strtolower($name)] = $value;
+        }
+
+        return strlen($headerLine);
+    };
 
     curl_setopt_array($ch, [
         CURLOPT_URL => $serviceUrl,
@@ -89,7 +104,9 @@ function proxyRequest($serviceUrl)
         CURLOPT_CUSTOMREQUEST => $_SERVER['REQUEST_METHOD'],
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $payload ?: null,
-        CURLOPT_FOLLOWLOCATION => true
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_HEADERFUNCTION => $headerFunction,
     ]);
 
     $response = curl_exec($ch);
@@ -104,10 +121,23 @@ function proxyRequest($serviceUrl)
     }
 
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    curl_close($ch);
 
     http_response_code($statusCode);
-    header("Content-Type: " . ($contentType ?: "application/json"));
+
+    if (!empty($responseHeaders['content-type'])) {
+        header("Content-Type: " . $responseHeaders['content-type']);
+    } else {
+        header("Content-Type: application/json");
+    }
+
+    if (!empty($responseHeaders['content-encoding'])) {
+        header("Content-Encoding: " . $responseHeaders['content-encoding']);
+    }
+
+    if (!empty($responseHeaders['content-length'])) {
+        header("Content-Length: " . $responseHeaders['content-length']);
+    }
 
     echo $response;
 }
