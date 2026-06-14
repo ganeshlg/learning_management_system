@@ -59,6 +59,7 @@ function probeService($url)
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_CUSTOMREQUEST => 'HEAD',
+        CURLOPT_NOBODY => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_TIMEOUT => 10,
     ]);
