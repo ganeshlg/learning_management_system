@@ -25,15 +25,60 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 
 // ================================
+// HELPERS
+// ================================
+function getForwardHeaders($contentType = 'application/json')
+{
+    $headers = [];
+
+    if ($contentType) {
+        $headers[] = 'Content-Type: ' . $contentType;
+    }
+
+    foreach ($_SERVER as $key => $value) {
+        if (strpos($key, 'HTTP_') !== 0) {
+            continue;
+        }
+
+        $header = str_replace('_', '-', substr($key, 5));
+        if (in_array(strtolower($header), ['host', 'content-length', 'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade'], true)) {
+            continue;
+        }
+
+        $headers[] = $header . ': ' . $value;
+    }
+
+    return $headers;
+}
+
+function probeService($url)
+{
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => 'HEAD',
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 10,
+    ]);
+
+    curl_exec($ch);
+
+    return [
+        'status' => curl_getinfo($ch, CURLINFO_HTTP_CODE),
+        'error' => curl_error($ch)
+    ];
+}
+
+
+// ================================
 // JSON PROXY
 // ================================
 function proxyRequest($serviceUrl)
 {
     $payload = file_get_contents("php://input");
-
-    $headers = [
-        'Content-Type: application/json'
-    ];
+    $headers = getForwardHeaders('application/json');
 
     $ch = curl_init();
 
@@ -153,10 +198,15 @@ if ($uri === '/api/login' && $method === 'POST') {
 
 // DEBUG
 if ($uri === '/api/debug' && $method === 'GET') {
+    $userProbe = probeService($services['user_service']);
+    $videoProbe = probeService($services['video_service'] . '/videos/civil.mp4');
+
     header('Content-Type: application/json');
     echo json_encode([
         'user_service' => $services['user_service'],
+        'user_probe' => $userProbe,
         'video_service' => $services['video_service'],
+        'video_probe' => $videoProbe,
         'video_test_url' => $services['video_service'] . '/videos/civil.mp4'
     ]);
     exit;
