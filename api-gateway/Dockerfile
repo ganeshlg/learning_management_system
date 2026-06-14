@@ -2,8 +2,8 @@ FROM php:8.1-cli
 WORKDIR /app
 COPY api-gateway/ /app
 
-RUN apt-get update && apt-get install -y unzip libzip-dev default-libmysqlclient-dev \
-  && docker-php-ext-install pdo pdo_mysql
+RUN apt-get update && apt-get install -y unzip libzip-dev default-libmysqlclient-dev libpq-dev \
+  && docker-php-ext-install pdo pdo_mysql pdo_pgsql
 
 RUN if [ -f composer.json ]; then \
   curl -sS https://getcomposer.org/installer | php && php composer.phar install --no-dev --no-interaction; \

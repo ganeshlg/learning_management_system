@@ -2,22 +2,58 @@ Render deployment instructions
 
 1) Sign up at https://dashboard.render.com and connect your Git repository.
 
-2) Deploy using `render.yaml`:
+2) If Render did not auto-detect `render.yaml`, create the services manually.
 
- - Replace placeholders in `render.yaml` with actual values:
-   - `{{user-service-url}}`, `{{video-service-url}}` will be the public URLs Render assigns (you can leave them and set `USER_SERVICE_URL`/`VIDEO_SERVICE_URL` via the Render UI instead).
-   - `{{db-host}}`, `{{db-user}}`, `{{db-pass}}` should be set from Render managed DB credentials.
+### Manual service creation
+Create three web services from your repo:
 
-3) Push your repository to GitHub/GitLab, then create services in Render by choosing "Deploy from repo" and selecting `render.yaml` (Render will create the services and DB automatically if supported in your account).
+- **api-gateway**
+  - Environment: Docker
+  - Dockerfile path: `api-gateway/Dockerfile`
+  - Start command: `php -S 0.0.0.0:8080 -t public public/index.php`
+  - Instance type / plan: Free
 
-4) In each service's Environment settings, set any missing env vars (for `api-gateway` set `USER_SERVICE_URL` and `VIDEO_SERVICE_URL` to the service URLs Render provides). For `user-service` and `video-service` set DB env vars accordingly.
+- **user-service**
+  - Environment: Docker
+  - Dockerfile path: `services/user-service/Dockerfile`
+  - Start command: `php -S 0.0.0.0:8080 -t public public/index.php`
+  - Instance type / plan: Free
 
-5) After deploy, test endpoints:
+- **video-service**
+  - Environment: Docker
+  - Dockerfile path: `services/video-service/Dockerfile`
+  - Start command: `php -S 0.0.0.0:8080 -t public public/index.php`
+  - Instance type / plan: Free
+
+3) Create a managed database in Render if available, or use an external MySQL instance.
+
+4) Configure environment variables.
+
+- For `user-service` and `video-service`:
+  - `DB_HOST` = your database host
+  - `DB_DATABASE` = `lms`
+  - `DB_USERNAME` = your DB username
+  - `DB_PASSWORD` = your DB password
+  - `DB_DRIVER` = `pgsql` (set to `pgsql` for PostgreSQL)
+  - `DB_PORT` = `5432` (optional, default 5432 for Postgres)
+
+- For `api-gateway`:
+  - `USER_SERVICE_URL` = `https://<your-user-service-render-url>`
+  - `VIDEO_SERVICE_URL` = `https://<your-video-service-render-url>`
+
+5) Deploy each service. Once deployed, Render will give you service URLs.
+
+6) Test the gateway endpoint:
 
 ```
-curl https://<your-api-gateway-url>/api/videos/civil.mp4 -I
+curl -I https://<your-api-gateway-url>/api/videos/civil.mp4
 ```
 
-Notes:
-- Render free plan has limits; for storage-heavy video serving you may prefer a CDN or object storage.
-- If Render's managed DB isn't available on free tier, create a small managed DB service or use an external MySQL and set `DB_HOST` accordingly.
+### If you use Render managed DB
+- Use the `lms-db` service from `render.yaml` if available.
+- Otherwise use an external MySQL host and set the DB env vars manually.
+
+### Troubleshooting
+- If the gateway cannot reach the services, confirm `USER_SERVICE_URL` and `VIDEO_SERVICE_URL` are the exact public URLs.
+- If the DB connection fails, confirm `DB_HOST` points to the rendered database host and the credentials are correct.
+- `render.yaml` is optional if you create services manually.
