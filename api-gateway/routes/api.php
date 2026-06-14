@@ -114,7 +114,7 @@ function proxyRequest($serviceUrl)
 
 
 // ================================
-// VIDEO STREAM PROXY (FIXED)
+// VIDEO STREAM PROXY
 // ================================
 function proxyVideo($url)
 {
@@ -125,59 +125,48 @@ function proxyVideo($url)
         $headers[] = "Range: " . $_SERVER['HTTP_RANGE'];
     }
 
-    $headersSent = false;
-
-    // Capture and forward response headers before body arrives
-    $headerFunction = function ($ch, $headerLine) use (&$headersSent) {
-        $trim = trim($headerLine);
-        if ($trim === '') {
-            return strlen($headerLine);
-        }
-
-        // Status line (e.g. HTTP/1.1 206 Partial Content)
-        if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#i', $trim, $m)) {
-            $code = (int)$m[1];
-            http_response_code($code);
-            return strlen($headerLine);
-        }
-
-        // Forward other headers (skip hop-by-hop and irrelevant headers)
-        if (stripos($trim, 'Transfer-Encoding:') === 0 || stripos($trim, 'Connection:') === 0 || stripos($trim, 'Host:') === 0) {
-            return strlen($headerLine);
-        }
-
-        // Replace Content-Type/Length to ensure client sees the correct values
-        if (stripos($trim, 'Content-Type:') === 0 || stripos($trim, 'Content-Length:') === 0 || stripos($trim, 'Content-Range:') === 0) {
-            header($trim, true);
-        } else {
-            header($trim, false);
-        }
-        return strlen($headerLine);
-    };
-
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => false,
+        CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HEADER => true,
         CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_HEADERFUNCTION => $headerFunction,
-        CURLOPT_WRITEFUNCTION => function ($ch, $data) {
-            echo $data;
-            flush();
-            return strlen($data);
-        }
+        CURLOPT_TIMEOUT => 60,
     ]);
 
-    $success = curl_exec($ch);
+    $response = curl_exec($ch);
 
-    if ($success === false) {
-        http_response_code(500);
+    if ($response === false) {
+        http_response_code(502);
         echo json_encode([
             "message" => "Video Gateway Error",
             "error" => curl_error($ch)
         ]);
+        curl_close($ch);
         return;
     }
+
+    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    curl_close($ch);
+
+    $rawHeaders = substr($response, 0, $headerSize);
+    $body = substr($response, $headerSize);
+
+    http_response_code($statusCode);
+
+    foreach (explode("\r\n", $rawHeaders) as $headerLine) {
+        $trim = trim($headerLine);
+        if ($trim === '' || stripos($trim, 'HTTP/') === 0) {
+            continue;
+        }
+        if (stripos($trim, 'Transfer-Encoding:') === 0 || stripos($trim, 'Connection:') === 0 || stripos($trim, 'Host:') === 0) {
+            continue;
+        }
+        header($trim, false);
+    }
+
+    echo $body;
 }
 
 
