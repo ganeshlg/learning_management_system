@@ -80,23 +80,8 @@ function proxyRequest($serviceUrl)
 {
     $payload = file_get_contents("php://input");
     $headers = getForwardHeaders('application/json');
-    $responseHeaders = [];
 
     $ch = curl_init();
-
-    $headerFunction = function ($curl, $headerLine) use (&$responseHeaders) {
-        $trim = trim($headerLine);
-        if ($trim === '' || stripos($trim, 'HTTP/') === 0) {
-            return strlen($headerLine);
-        }
-
-        [$name, $value] = array_map('trim', explode(':', $trim, 2) + [null, null]);
-        if ($name !== null && $value !== null) {
-            $responseHeaders[strtolower($name)] = $value;
-        }
-
-        return strlen($headerLine);
-    };
 
     curl_setopt_array($ch, [
         CURLOPT_URL => $serviceUrl,
@@ -106,39 +91,27 @@ function proxyRequest($serviceUrl)
         CURLOPT_POSTFIELDS => $payload ?: null,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_ENCODING => '',
-        CURLOPT_HEADERFUNCTION => $headerFunction,
+        CURLOPT_TIMEOUT => 30,
     ]);
 
     $response = curl_exec($ch);
 
     if ($response === false) {
-        http_response_code(500);
+        http_response_code(502);
         echo json_encode([
             "message" => "Gateway Error",
             "error" => curl_error($ch)
         ]);
+        curl_close($ch);
         return;
     }
 
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
 
     http_response_code($statusCode);
-
-    if (!empty($responseHeaders['content-type'])) {
-        header("Content-Type: " . $responseHeaders['content-type']);
-    } else {
-        header("Content-Type: application/json");
-    }
-
-    if (!empty($responseHeaders['content-encoding'])) {
-        header("Content-Encoding: " . $responseHeaders['content-encoding']);
-    }
-
-    if (!empty($responseHeaders['content-length'])) {
-        header("Content-Length: " . $responseHeaders['content-length']);
-    }
-
+    header("Content-Type: " . ($contentType ?: "application/json"));
     echo $response;
 }
 
