@@ -151,6 +151,17 @@ if ($uri === '/api/login' && $method === 'POST') {
     exit;
 }
 
+// DEBUG
+if ($uri === '/api/debug' && $method === 'GET') {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'user_service' => $services['user_service'],
+        'video_service' => $services['video_service'],
+        'video_test_url' => $services['video_service'] . '/videos/civil.mp4'
+    ]);
+    exit;
+}
+
 // VIDEO STREAM
 if ($method === 'GET' && preg_match('#^/api/videos/(.+)$#', $uri, $matches)) {
 
