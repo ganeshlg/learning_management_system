@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: api-gateway
+    env: docker
+    plan: free
+    dockerfilePath: api-gateway/Dockerfile
+    buildCommand: ''
+    startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
+    envVars:
+      - key: USER_SERVICE_URL
+        value: 'https://{{user-service-url}}'
+      - key: VIDEO_SERVICE_URL
+        value: 'https://{{video-service-url}}'
+
+  - type: web
+    name: user-service
+    env: docker
+    plan: free
+    dockerfilePath: services/user-service/Dockerfile
+    buildCommand: ''
+    startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
+    envVars:
+      - key: DB_HOST
+        value: '{{db-host}}'
+      - key: DB_DATABASE
+        value: 'lms'
+      - key: DB_USERNAME
+        value: '{{db-user}}'
+      - key: DB_PASSWORD
+        value: '{{db-pass}}'
+
+  - type: web
+    name: video-service
+    env: docker
+    plan: free
+    dockerfilePath: services/video-service/Dockerfile
+    buildCommand: ''
+    startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
+    envVars:
+      - key: DB_HOST
+        value: '{{db-host}}'
+      - key: DB_DATABASE
+        value: 'lms'
+      - key: DB_USERNAME
+        value: '{{db-user}}'
+      - key: DB_PASSWORD
+        value: '{{db-pass}}'
+
+databases:
+  - name: lms-db
+    plan: free

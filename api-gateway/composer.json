@@ -1,0 +1,9 @@
+{
+	"name": "lms/api-gateway",
+	"description": "API Gateway for LMS",
+	"require": {
+	},
+	"autoload": {
+		"psr-4": {"ApiGateway\\": "src/"}
+	}
+}

@@ -1,0 +1,19 @@
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": { "serviceId": "api-gateway", "region": "us-central1" }
+      },
+      {
+        "source": "/user/**",
+        "run": { "serviceId": "user-service", "region": "us-central1" }
+      },
+      {
+        "source": "/video/**",
+        "run": { "serviceId": "video-service", "region": "us-central1" }
+      }
+    ]
+  }
+}

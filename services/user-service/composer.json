@@ -1,0 +1,9 @@
+{
+	"name": "lms/user-service",
+	"description": "User service for LMS",
+	"require": {
+	},
+	"autoload": {
+		"psr-4": {"UserService\\": "src/"}
+	}
+}

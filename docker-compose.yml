@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    container_name: lms-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lms
+      MYSQL_USER: lmsuser
+      MYSQL_PASSWORD: lmspass
+    # do not map MySQL port to host to avoid conflicts with local MySQL
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway-local
+    ports:
+      - "9000:8080"
+    environment:
+      DB_HOST: db
+      DB_DATABASE: lms
+      DB_USERNAME: lmsuser
+      DB_PASSWORD: lmspass
+    depends_on:
+      - db
+
+  user-service:
+    build: ./services/user-service
+    container_name: user-service-local
+    ports:
+      - "9001:8080"
+    environment:
+      DB_HOST: db
+      DB_DATABASE: lms
+      DB_USERNAME: lmsuser
+      DB_PASSWORD: lmspass
+    depends_on:
+      - db
+
+  video-service:
+    build: ./services/video-service
+    container_name: video-service-local
+    ports:
+      - "9002:8080"
+    environment:
+      DB_HOST: db
+      DB_DATABASE: lms
+      DB_USERNAME: lmsuser
+      DB_PASSWORD: lmspass
+    depends_on:
+      - db
+
+volumes:
+  db_data:
