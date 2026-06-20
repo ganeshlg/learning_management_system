@@ -102,13 +102,11 @@ function proxyRequest($serviceUrl)
             "message" => "Gateway Error",
             "error" => curl_error($ch)
         ]);
-        curl_close($ch);
         return;
     }
 
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    curl_close($ch);
 
     http_response_code($statusCode);
     header("Content-Type: " . ($contentType ?: "application/json"));
@@ -145,13 +143,11 @@ function proxyVideo($url)
             "message" => "Video Gateway Error",
             "error" => curl_error($ch)
         ]);
-        curl_close($ch);
         return;
     }
 
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-    curl_close($ch);
 
     $rawHeaders = substr($response, 0, $headerSize);
     $body = substr($response, $headerSize);
@@ -202,6 +198,63 @@ if ($uri === '/api/debug' && $method === 'GET') {
         'video_probe' => $videoProbe,
         'video_test_url' => $services['video_service'] . '/videos/civil.mp4'
     ]);
+    exit;
+}
+
+// GET ALL COURSES
+if ($uri === '/api/courses' && $method === 'GET') {
+    proxyRequest($services['user_service'] . '/courses');
+    exit;
+}
+
+// GET SINGLE COURSE WITH MODULES AND LESSONS
+if (preg_match('#^/api/courses/([^/]+)$#', $uri, $matches) && $method === 'GET') {
+    proxyRequest($services['user_service'] . '/courses/' . urlencode($matches[1]));
+    exit;
+}
+
+// ADMIN LOGIN (proxy)
+if ($uri === '/api/admin/login' && $method === 'POST') {
+    proxyRequest($services['user_service'] . '/admin/login');
+    exit;
+}
+
+// ADMIN: add trainer (proxy)
+if ($uri === '/api/admin/trainers' && $method === 'POST') {
+    proxyRequest($services['user_service'] . '/admin/trainers');
+    exit;
+}
+
+if ($uri === '/api/admin/trainers' && $method === 'GET') {
+    // forward query string for credentials
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    $target = $services['user_service'] . '/admin/trainers' . ($qs ? '?' . $qs : '');
+    proxyRequest($target);
+    exit;
+}
+
+if ($uri === '/api/admin/trainers' && $method === 'PUT') {
+    proxyRequest($services['user_service'] . '/admin/trainers');
+    exit;
+}
+
+if ($uri === '/api/admin/trainers' && $method === 'DELETE') {
+    proxyRequest($services['user_service'] . '/admin/trainers');
+    exit;
+}
+
+// PURCHASE COURSE (create purchase)
+if ($uri === '/api/purchase' && $method === 'POST') {
+    proxyRequest($services['user_service'] . '/purchase');
+    exit;
+}
+
+// GET PURCHASED COURSE IDS (query param: email)
+if ($uri === '/api/purchases' && $method === 'GET') {
+    // forward query string
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    $target = $services['user_service'] . '/purchases' . ($qs ? '?' . $qs : '');
+    proxyRequest($target);
     exit;
 }
 
