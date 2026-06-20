@@ -15,8 +15,8 @@ class Database
         $this->host = getenv('DB_HOST') ?: 'db';
         $this->port = getenv('DB_PORT') ?: ($this->driver === 'pgsql' ? '5432' : '3306');
         $this->db_name = getenv('DB_DATABASE') ?: 'lms';
-        $this->username = getenv('DB_USERNAME') ?: ($this->driver === 'pgsql' ? 'postgres' : 'lmsuser');
-        $this->password = getenv('DB_PASSWORD') ?: ($this->driver === 'pgsql' ? 'postgres' : 'lmspass');
+        $this->username = getenv('DB_USERNAME') !== false ? getenv('DB_USERNAME') : ($this->driver === 'pgsql' ? 'postgres' : 'lmsuser');
+        $this->password = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : ($this->driver === 'pgsql' ? 'postgres' : 'lmspass');
     }
 
     public function connect()
