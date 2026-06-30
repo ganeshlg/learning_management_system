@@ -218,7 +218,7 @@ class Course
 
     public function createLesson($data)
     {
-        $sql = "INSERT INTO lessons(id, module_id, title, lesson_type, content, `order`) 
+        $sql = "INSERT INTO lessons(id, module_id, title, lesson_type, content, order) 
                 VALUES(:id, :module_id, :title, :lesson_type, :content, :order)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
