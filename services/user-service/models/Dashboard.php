@@ -91,13 +91,15 @@ class Dashboard
     }
 
     public function addActivity(string $user, string $activity): bool
-    {
-        $sql = "INSERT INTO activity_logs(user, activity) VALUES(:user, :activity)";
-        $stmt = $this->db->prepare($sql);
+{
+    $sql = 'INSERT INTO activity_logs ("user", activity)
+            VALUES (:user, :activity)';
 
-        return $stmt->execute([
-            'user' => $user,
-            'activity' => $activity,
-        ]);
-    }
+    $stmt = $this->db->prepare($sql);
+
+    return $stmt->execute([
+        ':user' => $user,
+        ':activity' => $activity,
+    ]);
+}
 }
