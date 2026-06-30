@@ -29,15 +29,32 @@ class Dashboard
 
         $startDate = (new DateTime('first day of this month'))->modify('-' . ($months - 1) . ' months')->format('Y-m-01');
 
-        $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
-                FROM users
-                WHERE created_at >= :start_date
-                GROUP BY month
-                ORDER BY month";
+        // $sql = "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
+        //         FROM users
+        //         WHERE created_at >= :start_date
+        //         GROUP BY month
+        //         ORDER BY month";
+
+        // $stmt = $this->db->prepare($sql);
+        // $stmt->execute(['start_date' => $startDate]);
+        // $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sql = "SELECT DATE_TRUNC('month', created_at) AS month,
+               COUNT(*) AS count
+        FROM users
+        WHERE created_at >= :start_date
+        GROUP BY DATE_TRUNC('month', created_at)
+        ORDER BY month";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['start_date' => $startDate]);
+
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // // Format the month if needed
+        // foreach ($rows as &$row) {
+        //     $row['month'] = date('Y-m', strtotime($row['month']));
+        // }
 
         $countsByMonth = [];
         foreach ($rows as $row) {
