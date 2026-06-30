@@ -21,17 +21,31 @@ CREATE TABLE IF NOT EXISTS modules (
     id VARCHAR(50) PRIMARY KEY,
     course_id VARCHAR(50) NOT NULL,
     title VARCHAR(255) NOT NULL,
+    description TEXT,
     video_url TEXT,
+    type VARCHAR(100),
+    live_link VARCHAR(500),
+    recorded_video_url TEXT,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS lessons (
-    id VARCHAR(50),
-    module_id VARCHAR(50),
+    id VARCHAR(50) PRIMARY KEY,
+    module_id VARCHAR(50) NOT NULL,
     title VARCHAR(255) NOT NULL,
-    lesson_type VARCHAR(50),
-    PRIMARY KEY (id, module_id),
+    lesson_type ENUM('liveSession', 'text', 'resource', 'assignment', 'quiz'),
+    content TEXT,
+    `order` INT DEFAULT 0,
     FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS lesson_resources (
+    id VARCHAR(50) PRIMARY KEY,
+    lesson_id VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL,
+    file_type VARCHAR(100),
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
 );
 
 -- Purchases: which user purchased which course
@@ -53,4 +67,11 @@ CREATE TABLE IF NOT EXISTS admins (
   name VARCHAR(255) DEFAULT NULL,
   role ENUM('super_admin','trainer') NOT NULL DEFAULT 'trainer',
   last_logged_in TIMESTAMP NULL DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  `user` VARCHAR(255) NOT NULL,
+  activity TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

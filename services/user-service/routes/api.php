@@ -4,12 +4,14 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/CourseController.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
+require_once __DIR__ . '/../controllers/DashboardController.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
 
 $db = (new Database())->connect();
 
 $authController = new AuthController($db);
 $courseController = new CourseController($db);
+$dashboardController = new DashboardController($db);
 
 $uri = parse_url(
     $_SERVER['REQUEST_URI'],
@@ -79,13 +81,113 @@ if ($uri === '/admin/courses' && $method === 'POST') {
     exit;
 }
 
+// ADMIN: list all courses (requires admin_email & admin_password as query params)
+if ($uri === '/admin/courses' && $method === 'GET') {
+    $courseController->adminListCourses();
+    exit;
+}
+
+// ADMIN: update course
+if ($uri === '/admin/courses' && $method === 'PUT') {
+    $courseController->updateCourse();
+    exit;
+}
+
+// ADMIN: delete course
+if ($uri === '/admin/courses' && $method === 'DELETE') {
+    $courseController->deleteCourse();
+    exit;
+}
+
+// ADMIN: publish / unpublish
+if ($uri === '/admin/courses/publish' && $method === 'POST') {
+    $courseController->publishCourse();
+    exit;
+}
+
+if ($uri === '/admin/courses/unpublish' && $method === 'POST') {
+    $courseController->unpublishCourse();
+    exit;
+}
+
 if ($uri === '/admin/modules' && $method === 'POST') {
     $courseController->createModule();
     exit;
 }
 
+if ($uri === '/admin/modules' && $method === 'PUT') {
+    $courseController->updateModule();
+    exit;
+}
+
+if ($uri === '/admin/modules' && $method === 'DELETE') {
+    $courseController->deleteModule();
+    exit;
+}
+
 if ($uri === '/admin/lessons' && $method === 'POST') {
     $courseController->createLesson();
+    exit;
+}
+
+if ($uri === '/admin/lessons' && $method === 'PUT') {
+    $courseController->updateLesson();
+    exit;
+}
+
+if ($uri === '/admin/lessons' && $method === 'DELETE') {
+    $courseController->deleteLesson();
+    exit;
+}
+
+if ($uri === '/admin/upload' && $method === 'POST') {
+    $courseController->uploadFile();
+    exit;
+}
+
+if (preg_match('#^/uploads/([^/]+)/(.+)$#', $uri, $matches) && $method === 'GET') {
+    $courseController->serveUpload($matches[1], $matches[2]);
+    exit;
+}
+
+if ($uri === '/admin/modules' && $method === 'GET') {
+    $courseController->getModulesByCourseId();
+    exit;
+}
+
+if ($uri === '/admin/lessons' && $method === 'GET') {
+    $courseController->getLessonsByModuleId();
+    exit;
+}
+
+
+if ($uri === '/admin/dashboard' && $method === 'GET') {
+    $dashboardController->getDashboard();
+    exit;
+}
+
+if ($uri === '/admin/dashboard/stats' && $method === 'GET') {
+    $dashboardController->getDashboard();
+    exit;
+}
+
+if ($uri === '/admin/dashboard/summary' && $method === 'GET') {
+    $dashboardController->getSummary();
+    exit;
+}
+
+if ($uri === '/admin/dashboard/enrollment-trend' && $method === 'GET') {
+    $dashboardController->getEnrollmentTrend();
+    exit;
+}
+
+if ($uri === '/admin/dashboard/recent-activities' && $method === 'GET') {
+    $dashboardController->getRecentActivities();
+    exit;
+}
+
+if ($uri === '/admin/activity' && $method === 'POST') {
+    $dashboardController->createActivity();
     exit;
 }
 
