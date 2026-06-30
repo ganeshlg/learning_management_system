@@ -39,12 +39,12 @@ class Course
     //Update to get the lessons with resource
     public function findLessonsByModuleId($moduleId)
     {
-        $sql = "SELECT l.id, l.module_id, l.title, l.lesson_type, l.content, l.`order`, 
+        $sql = "SELECT l.id, l.module_id, l.title, l.lesson_type, l.content, l.lesson_order, 
                        lr.id AS resource_id, lr.title AS resource_title, lr.url AS resource_url, lr.file_type AS resource_file_type
                 FROM lessons l
                 LEFT JOIN lesson_resources lr ON l.id = lr.lesson_id
                 WHERE l.module_id = :module_id
-                ORDER BY l.`order`, l.id, lr.id";
+                ORDER BY l.lesson_order, l.id, lr.id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['module_id' => $moduleId]);
         $lessons = [];
@@ -57,7 +57,7 @@ class Course
                     'title' => $row['title'],
                     'lesson_type' => $row['lesson_type'],
                     'content' => $row['content'],
-                    'order' => $row['order'],
+                    'lesson_order' => $row['lesson_order'],
                     'resources' => []
                 ];
             }
@@ -218,8 +218,8 @@ class Course
 
     public function createLesson($data)
     {
-        $sql = "INSERT INTO lessons(id, module_id, title, lesson_type, content, order) 
-                VALUES(:id, :module_id, :title, :lesson_type, :content, :order)";
+        $sql = "INSERT INTO lessons(id, module_id, title, lesson_type, content, lesson_order) 
+                VALUES(:id, :module_id, :title, :lesson_type, :content, :lesson_order)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             'id' => $data['id'],
@@ -227,7 +227,7 @@ class Course
             'title' => $data['title'],
             'lesson_type' => $data['lesson_type'] ?? null,
             'content' => $data['content'] ?? null,
-            'order' => $data['order'] ?? 0,
+            'lesson_order' => $data['lesson_order'] ?? 0,
         ]);
     }
 
@@ -235,7 +235,7 @@ class Course
     {
         $fields = [];
         $params = ['id' => $data['id']];
-        $allowed = ['module_id', 'title', 'lesson_type', 'content', 'order'];
+        $allowed = ['module_id', 'title', 'lesson_type', 'content', 'lesson_order'];
         foreach ($allowed as $col) {
             if (array_key_exists($col, $data)) {
                 $fields[] = "`$col` = :$col";
