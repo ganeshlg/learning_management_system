@@ -11,7 +11,9 @@ class Course
 
     public function getAll()
     {
-        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at FROM courses WHERE 1";
+        //Updated the TRUE issue
+        //Ganesh L G
+        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at FROM courses WHERE TRUE";
         // By default callers can append a WHERE clause externally; keep signature simple.
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -159,7 +161,7 @@ class Course
 
     public function publishCourse($id)
     {
-        $sql = "UPDATE courses SET is_published = 1, published_at = CURRENT_TIMESTAMP WHERE id = :id";
+        $sql = "UPDATE courses SET is_published = TRUE, published_at = CURRENT_TIMESTAMP WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute(['id' => $id]);
     }
