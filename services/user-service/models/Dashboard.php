@@ -39,12 +39,12 @@ class Dashboard
         // $stmt->execute(['start_date' => $startDate]);
         // $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $sql = "SELECT DATE_TRUNC('month', created_at) AS month,
-               COUNT(*) AS count
-        FROM users
-        WHERE created_at >= :start_date
-        GROUP BY DATE_TRUNC('month', created_at)
-        ORDER BY month";
+        $sql = "SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
+                COUNT(*) AS count
+                FROM users
+                WHERE created_at >= :start_date
+                GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+                ORDER BY month;";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['start_date' => $startDate]);
