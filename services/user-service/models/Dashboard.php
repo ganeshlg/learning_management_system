@@ -78,11 +78,12 @@ class Dashboard
     public function getRecentActivities(int $limit = 20): array
     {
         $stmt = $this->db->prepare(
-            "SELECT id, `user`, activity, created_at
-             FROM activity_logs
-             ORDER BY created_at DESC
-             LIMIT :limit"
+            'SELECT id, "user", activity, created_at
+            FROM activity_logs
+            ORDER BY created_at DESC
+            LIMIT :limit'
         );
+
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
