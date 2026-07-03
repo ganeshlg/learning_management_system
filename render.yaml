@@ -21,13 +21,15 @@ services:
     startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
     envVars:
       - key: DB_HOST
-        value: '{{db-host}}'
+        value: '{{lms-db-host}}'
+      - key: DB_PORT
+        value: '{{lms-db-port}}'
       - key: DB_DATABASE
         value: 'lms'
       - key: DB_USERNAME
-        value: '{{db-user}}'
+        value: '{{lms-db-username}}'
       - key: DB_PASSWORD
-        value: '{{db-pass}}'
+        value: '{{lms-db-password}}'
 
   - type: web
     name: video-service
@@ -38,13 +40,15 @@ services:
     startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
     envVars:
       - key: DB_HOST
-        value: '{{db-host}}'
+        value: '{{lms-db-host}}'
+      - key: DB_PORT
+        value: '{{lms-db-port}}'
       - key: DB_DATABASE
         value: 'lms'
       - key: DB_USERNAME
-        value: '{{db-user}}'
+        value: '{{lms-db-username}}'
       - key: DB_PASSWORD
-        value: '{{db-pass}}'
+        value: '{{lms-db-password}}'
 
 databases:
   - name: lms-db

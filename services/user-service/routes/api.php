@@ -20,6 +20,11 @@ $uri = parse_url(
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($uri === '/' && $method === 'GET') {
+    echo json_encode(['message' => 'User service is running']);
+    exit;
+}
+
 if ($uri === '/register' && $method === 'POST') {
     $authController->register();
     exit;

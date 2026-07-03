@@ -23,6 +23,12 @@ $services = require __DIR__ . '/../config/services.php';
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($uri === '/' && $method === 'GET') {
+    header('Content-Type: application/json');
+    echo json_encode(['message' => 'API Gateway is running']);
+    exit;
+}
+
 
 // ================================
 // HELPERS

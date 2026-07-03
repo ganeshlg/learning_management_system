@@ -4,6 +4,13 @@ header('Content-Type: video/mp4');
 header('Accept-Ranges: bytes');
 
 $uri = $_SERVER['REQUEST_URI'];
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($uri === '/' && $method === 'GET') {
+    header('Content-Type: application/json');
+    echo json_encode(['message' => 'Video service is running']);
+    exit;
+}
 
 if (!preg_match('#/videos/(.+)$#', $uri, $matches)) {
     http_response_code(404);
