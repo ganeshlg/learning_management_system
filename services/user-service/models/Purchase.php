@@ -16,7 +16,17 @@ class Purchase
         try {
             return $stmt->execute(['user_id' => $userId, 'course_id' => $courseId]);
         } catch (PDOException $e) {
-            // duplicate purchase will raise an error due to UNIQUE constraint
+            return false;
+        }
+    }
+
+    public function removePurchaseByUserId($userId, $courseId)
+    {
+        $sql = "DELETE FROM purchases WHERE user_id = :user_id AND course_id = :course_id";
+        $stmt = $this->db->prepare($sql);
+        try {
+            return $stmt->execute(['user_id' => $userId, 'course_id' => $courseId]);
+        } catch (PDOException $e) {
             return false;
         }
     }
@@ -27,5 +37,13 @@ class Purchase
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['user_id' => $userId]);
         return array_map(function($r){ return $r['course_id']; }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public function getUsersByCourseId($courseId)
+    {
+        $sql = "SELECT u.id, u.name, u.email FROM purchases p JOIN users u ON u.id = p.user_id WHERE p.course_id = :course_id ORDER BY u.name ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['course_id' => $courseId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -66,6 +66,14 @@ CREATE TABLE IF NOT EXISTS admins (
   password VARCHAR(255) NOT NULL,
   name VARCHAR(255) DEFAULT NULL,
   role ENUM('super_admin','trainer') NOT NULL DEFAULT 'trainer',
+  profile_description TEXT DEFAULT NULL,
+  experience_years INT DEFAULT 0,
+  photo_url VARCHAR(500) DEFAULT NULL,
+  expertise VARCHAR(500) DEFAULT NULL,
+  phone VARCHAR(50) DEFAULT NULL,
+  location VARCHAR(255) DEFAULT NULL,
+  linkedin_url VARCHAR(500) DEFAULT NULL,
+  website_url VARCHAR(500) DEFAULT NULL,
   last_logged_in TIMESTAMP NULL DEFAULT NULL
 );
 

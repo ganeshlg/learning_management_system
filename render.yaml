@@ -8,9 +8,9 @@ services:
     startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
     envVars:
       - key: USER_SERVICE_URL
-        value: 'https://{{user-service-url}}'
+        value: 'https://{{user-service.url}}'
       - key: VIDEO_SERVICE_URL
-        value: 'https://{{video-service-url}}'
+        value: 'https://{{video-service.url}}'
 
   - type: web
     name: user-service
@@ -21,15 +21,15 @@ services:
     startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
     envVars:
       - key: DB_HOST
-        value: '{{lms-db-host}}'
+        value: '{{lms-db.host}}'
       - key: DB_PORT
-        value: '{{lms-db-port}}'
+        value: '{{lms-db.port}}'
       - key: DB_DATABASE
         value: 'lms'
       - key: DB_USERNAME
-        value: '{{lms-db-username}}'
+        value: '{{lms-db.user}}'
       - key: DB_PASSWORD
-        value: '{{lms-db-password}}'
+        value: '{{lms-db.password}}'
 
   - type: web
     name: video-service
@@ -40,15 +40,15 @@ services:
     startCommand: 'php -S 0.0.0.0:8080 -t public public/index.php'
     envVars:
       - key: DB_HOST
-        value: '{{lms-db-host}}'
+        value: '{{lms-db.host}}'
       - key: DB_PORT
-        value: '{{lms-db-port}}'
+        value: '{{lms-db.port}}'
       - key: DB_DATABASE
         value: 'lms'
       - key: DB_USERNAME
-        value: '{{lms-db-username}}'
+        value: '{{lms-db.user}}'
       - key: DB_PASSWORD
-        value: '{{lms-db-password}}'
+        value: '{{lms-db.password}}'
 
 databases:
   - name: lms-db

@@ -202,6 +202,24 @@ if ($uri === '/purchase' && $method === 'POST') {
     exit;
 }
 
+// ADMIN: add a user to a course enrollment
+if ($uri === '/admin/course-users' && $method === 'POST') {
+    $courseController->adminAddCourseUser();
+    exit;
+}
+
+// ADMIN: remove a user from a course enrollment
+if ($uri === '/admin/course-users' && $method === 'DELETE') {
+    $courseController->adminRemoveCourseUser();
+    exit;
+}
+
+// ADMIN: list users enrolled to a course
+if ($uri === '/admin/course-users' && $method === 'GET') {
+    $courseController->adminListCourseUsers();
+    exit;
+}
+
 // GET PURCHASED COURSE IDS BY USER EMAIL
 if ($uri === '/purchases' && $method === 'GET') {
     $courseController->getUserPurchases();

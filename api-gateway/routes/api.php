@@ -447,6 +447,26 @@ if ($uri === '/api/purchases' && $method === 'GET') {
     exit;
 }
 
+// ADMIN: add a user to a course enrollment
+if ($uri === '/api/admin/course-users' && $method === 'POST') {
+    proxyRequest($services['user_service'] . '/admin/course-users');
+    exit;
+}
+
+// ADMIN: remove a user from a course enrollment
+if ($uri === '/api/admin/course-users' && $method === 'DELETE') {
+    proxyRequest($services['user_service'] . '/admin/course-users');
+    exit;
+}
+
+// ADMIN: list users enrolled to a course
+if ($uri === '/api/admin/course-users' && $method === 'GET') {
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    $target = $services['user_service'] . '/admin/course-users' . ($qs ? '?' . $qs : '');
+    proxyRequest($target);
+    exit;
+}
+
 // VIDEO STREAM
 if (($method === 'GET' || $method === 'HEAD') && preg_match('#^/api/videos/(.+)$#', $uri, $matches)) {
 

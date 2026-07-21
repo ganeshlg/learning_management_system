@@ -720,6 +720,117 @@ class CourseController
         echo json_encode(['message' => 'Purchase recorded']);
     }
 
+    public function adminAddCourseUser()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (empty($data['admin_email']) || empty($data['admin_password']) || empty($data['email']) || empty($data['course_id'])) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'admin_email, admin_password, email and course_id required']);
+            return;
+        }
+
+        $admin = $this->authorizeAdmin($data['admin_email'], $data['admin_password']);
+        if (!$admin || $admin['role'] !== 'super_admin') {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Forbidden: super_admin required']);
+            return;
+        }
+
+        require_once __DIR__ . '/../models/User.php';
+        $userModel = new User($this->db);
+        $user = $userModel->findByEmail($data['email']);
+        if (!$user) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User not found']);
+            return;
+        }
+
+        $ok = $this->purchase->addPurchaseByUserId($user['id'], $data['course_id']);
+        if (!$ok) {
+            http_response_code(409);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User already enrolled or error']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['message' => 'User enrolled to course']);
+    }
+
+    public function adminRemoveCourseUser()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (empty($data['admin_email']) || empty($data['admin_password']) || empty($data['email']) || empty($data['course_id'])) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'admin_email, admin_password, email and course_id required']);
+            return;
+        }
+
+        $admin = $this->authorizeAdmin($data['admin_email'], $data['admin_password']);
+        if (!$admin || $admin['role'] !== 'super_admin') {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Forbidden: super_admin required']);
+            return;
+        }
+
+        require_once __DIR__ . '/../models/User.php';
+        $userModel = new User($this->db);
+        $user = $userModel->findByEmail($data['email']);
+        if (!$user) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User not found']);
+            return;
+        }
+
+        $ok = $this->purchase->removePurchaseByUserId($user['id'], $data['course_id']);
+        if (!$ok) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Enrollment not found']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['message' => 'User removed from course']);
+    }
+
+    public function adminListCourseUsers()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        $adminEmail = $data['admin_email'] ?? ($_GET['admin_email'] ?? null);
+        $adminPassword = $data['admin_password'] ?? ($_GET['admin_password'] ?? null);
+        $courseId = $data['course_id'] ?? ($_GET['course_id'] ?? null);
+
+        if (empty($adminEmail) || empty($adminPassword) || empty($courseId)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'admin_email, admin_password and course_id required']);
+            return;
+        }
+
+        $admin = $this->authorizeAdmin($adminEmail, $adminPassword);
+        if (!$admin || $admin['role'] !== 'super_admin') {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Forbidden: super_admin required']);
+            return;
+        }
+
+        $users = $this->purchase->getUsersByCourseId($courseId);
+        header('Content-Type: application/json');
+        echo json_encode(['users' => $users]);
+    }
+
     public function getUserPurchases()
     {
         $email = $_GET['email'] ?? null;
