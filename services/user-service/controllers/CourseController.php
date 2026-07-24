@@ -690,6 +690,10 @@ class CourseController
     public function purchaseCourse()
     {
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
         if (empty($data['email']) || empty($data['course_id'])) {
             http_response_code(400);
             header('Content-Type: application/json');
@@ -702,10 +706,30 @@ class CourseController
 
         $user = $userModel->findByEmail($data['email']);
         if (!$user) {
-            http_response_code(404);
-            header('Content-Type: application/json');
-            echo json_encode(['message' => 'User not found']);
-            return;
+            if (empty($data['password']) || (empty($data['name']) && empty($data['full_name']))) {
+                http_response_code(404);
+                header('Content-Type: application/json');
+                echo json_encode(['message' => 'User not found']);
+                return;
+            }
+
+            $created = $userModel->create(
+                $data['name'] ?? $data['full_name'] ?? null,
+                $data['email'],
+                $data['password'],
+                $data
+            );
+
+            if (!$created) {
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode(['message' => 'Unable to create user profile']);
+                return;
+            }
+
+            $user = $userModel->findByEmail($data['email']);
+        } else {
+            $userModel->syncEnrollmentData($user['id'], $data);
         }
 
         $ok = $this->purchase->addPurchaseByUserId($user['id'], $data['course_id']);

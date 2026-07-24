@@ -3,7 +3,31 @@ CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL
+  password VARCHAR(255) NOT NULL,
+  full_name VARCHAR(255) DEFAULT NULL,
+  passport_photo_url TEXT DEFAULT NULL,
+  date_of_birth DATE DEFAULT NULL,
+  gender VARCHAR(50) DEFAULT NULL,
+  mobile_number VARCHAR(50) DEFAULT NULL,
+  address TEXT DEFAULT NULL,
+  city_state_pin VARCHAR(255) DEFAULT NULL,
+  emergency_contact VARCHAR(255) DEFAULT NULL,
+  educational_qualification VARCHAR(255) DEFAULT NULL,
+  college_university VARCHAR(255) DEFAULT NULL,
+  year_of_graduation VARCHAR(20) DEFAULT NULL,
+  current_status VARCHAR(50) DEFAULT NULL,
+  current_organization VARCHAR(255) DEFAULT NULL,
+  total_experience VARCHAR(100) DEFAULT NULL,
+  business_name VARCHAR(255) DEFAULT NULL,
+  areas_of_interest TEXT DEFAULT NULL,
+  why_join_program TEXT DEFAULT NULL,
+  business_idea TEXT DEFAULT NULL,
+  skills_to_develop TEXT DEFAULT NULL,
+  how_heard_about_program VARCHAR(255) DEFAULT NULL,
+  documents_enclosed TEXT DEFAULT NULL,
+  declaration TEXT DEFAULT NULL,
+  signature VARCHAR(255) DEFAULT NULL,
+  declaration_date DATE DEFAULT NULL
 );
 
 -- Courses, modules and lessons

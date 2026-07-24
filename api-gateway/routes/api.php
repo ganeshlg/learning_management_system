@@ -230,6 +230,24 @@ if ($uri === '/api/login' && $method === 'POST') {
     exit;
 }
 
+// GET ALL USERS
+if ($uri === '/api/users' && $method === 'GET') {
+    proxyRequest($services['user_service'] . '/users');
+    exit;
+}
+
+// UPDATE USER
+if (preg_match('#^/api/users/([^/]+)$#', $uri, $matches) && $method === 'PUT') {
+    proxyRequest($services['user_service'] . '/users/' . urlencode($matches[1]));
+    exit;
+}
+
+// DELETE USER
+if (preg_match('#^/api/users/([^/]+)$#', $uri, $matches) && $method === 'DELETE') {
+    proxyRequest($services['user_service'] . '/users/' . urlencode($matches[1]));
+    exit;
+}
+
 // DEBUG
 if ($uri === '/api/debug' && $method === 'GET') {
     $userProbe = probeService($services['user_service']);

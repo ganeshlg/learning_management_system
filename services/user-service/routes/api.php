@@ -35,6 +35,21 @@ if ($uri === '/login' && $method === 'POST') {
     exit;
 }
 
+if ($uri === '/users' && $method === 'GET') {
+    $authController->listUsers();
+    exit;
+}
+
+if (preg_match('#^/users/(\d+)$#', $uri, $matches) && $method === 'PUT') {
+    $authController->updateUser($matches[1]);
+    exit;
+}
+
+if (preg_match('#^/users/(\d+)$#', $uri, $matches) && $method === 'DELETE') {
+    $authController->deleteUser($matches[1]);
+    exit;
+}
+
 if ($uri === '/courses' && $method === 'GET') {
     $courseController->listCourses();
     exit;
