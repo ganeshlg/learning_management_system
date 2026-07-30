@@ -12,86 +12,154 @@ class AuthController
     }
 
     private function sendRegistrationMail($toEmail, $userName = null)
-    {
-        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            return false;
-        }
+        {
+            if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+                return false;
+            }
 
-        $displayName = $userName ?: $toEmail;
-        $fromEmail = getenv('MAIL_FROM') ?: 'no-reply@lms.local';
-        $fromName = getenv('MAIL_FROM_NAME') ?: 'LMS';
+            $displayName = $userName ?: $toEmail;
 
-        $subject = 'Welcome to LMS';
-        $message = "Hello {$displayName},\n\n";
-        $message .= "Your account has been registered successfully.\n";
-        $message .= "This is a test email for registration confirmation.\n\n";
-        $message .= "Thank you,\n{$fromName}";
+            $subject = 'Welcome to LMS';
 
-        $headers = [];
-        $headers[] = 'From: ' . $fromName . ' <' . $fromEmail . '>';
-        $headers[] = 'Reply-To: ' . $fromEmail;
-        $headers[] = 'X-Mailer: PHP/' . phpversion();
-        $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+            $htmlMessage = "
+                <html>
+                <body>
+                    <h2>Hello {$displayName},</h2>
+                    <p>Your account has been registered successfully.</p>
+                    <p>This is a test email for registration confirmation.</p>
+                    <br>
+                    <p>Thank you,<br>LMS</p>
+                </body>
+                </html>
+            ";
 
-        $smtpHost = 'smtp.gmail.com';
-        $smtpPort = '587';
-        $smtpUsername = 'ganeshofficial2108@gmail.com';
-        $smtpPassword = getenv('SMTP_PASSWORD') ?: '';
-        $smtpEncryption = 'tls';
+            $apiKey = getenv('RESEND_API_KEY');
 
-        if ($smtpHost && $smtpUsername && $smtpPassword) {
-            $socket = @stream_socket_client(($smtpEncryption === 'ssl' ? 'ssl://' : '') . $smtpHost . ':' . $smtpPort, $errno, $errstr, 15);
-            if ($socket) {
-                stream_set_timeout($socket, 15);
-                $this->readSmtpResponse($socket, '220');
+            if (empty($apiKey)) {
+                error_log('Resend API key missing');
+                return false;
+            }
 
-                fwrite($socket, "EHLO localhost\r\n");
-                $this->readSmtpResponse($socket, '250');
+            $data = [
+                "from" => "onboarding@resend.dev",
+                "to" => [$toEmail],
+                "subject" => $subject,
+                "html" => $htmlMessage
+            ];
 
-                if ($smtpEncryption === 'tls') {
-                    fwrite($socket, "STARTTLS\r\n");
-                    $this->readSmtpResponse($socket, '220');
-                    stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                    fwrite($socket, "EHLO localhost\r\n");
-                    $this->readSmtpResponse($socket, '250');
-                }
+            $ch = curl_init('https://api.resend.com/emails');
 
-                fwrite($socket, "AUTH LOGIN\r\n");
-                $this->readSmtpResponse($socket, '334');
-                fwrite($socket, base64_encode($smtpUsername) . "\r\n");
-                $this->readSmtpResponse($socket, '334');
-                fwrite($socket, base64_encode($smtpPassword) . "\r\n");
-                $this->readSmtpResponse($socket, '235');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($data),
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $apiKey,
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 15
+            ]);
 
-                fwrite($socket, "MAIL FROM:<{$fromEmail}>\r\n");
-                $this->readSmtpResponse($socket, '250');
-                fwrite($socket, "RCPT TO:<{$toEmail}>\r\n");
-                $this->readSmtpResponse($socket, '250');
-                fwrite($socket, "DATA\r\n");
-                $this->readSmtpResponse($socket, '354');
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-                $emailBody = "Subject: {$subject}\r\n";
-                $emailBody .= implode("\r\n", $headers) . "\r\n";
-                $emailBody .= "\r\n" . $message . "\r\n." . "\r\n";
-                fwrite($socket, $emailBody);
-                $this->readSmtpResponse($socket, '250');
-                fwrite($socket, "QUIT\r\n");
-                fclose($socket);
+            if (curl_errno($ch)) {
+                error_log('Resend cURL error: ' . curl_error($ch));
+                curl_close($ch);
+                return false;
+            }
 
+            curl_close($ch);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
                 return true;
             }
 
-            error_log('Registration email failed via SMTP for ' . $toEmail . ': ' . $errstr);
+            error_log("Resend email failed. HTTP {$httpCode}: {$response}");
             return false;
         }
 
-        $sent = mail($toEmail, $subject, $message, implode("\r\n", $headers));
-        if (!$sent) {
-            error_log('Registration email failed for ' . $toEmail);
-        }
+    // private function sendRegistrationMail($toEmail, $userName = null)
+    // {
+    //     if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+    //         return false;
+    //     }
 
-        return $sent;
-    }
+    //     $displayName = $userName ?: $toEmail;
+    //     $fromEmail = getenv('MAIL_FROM') ?: 'no-reply@lms.local';
+    //     $fromName = getenv('MAIL_FROM_NAME') ?: 'LMS';
+
+    //     $subject = 'Welcome to LMS';
+    //     $message = "Hello {$displayName},\n\n";
+    //     $message .= "Your account has been registered successfully.\n";
+    //     $message .= "This is a test email for registration confirmation.\n\n";
+    //     $message .= "Thank you,\n{$fromName}";
+
+    //     $headers = [];
+    //     $headers[] = 'From: ' . $fromName . ' <' . $fromEmail . '>';
+    //     $headers[] = 'Reply-To: ' . $fromEmail;
+    //     $headers[] = 'X-Mailer: PHP/' . phpversion();
+    //     $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+
+    //     $smtpHost = 'smtp.gmail.com';
+    //     $smtpPort = '587';
+    //     $smtpUsername = 'ganeshofficial2108@gmail.com';
+    //     $smtpPassword = getenv('SMTP_PASSWORD') ?: '';
+    //     $smtpEncryption = 'tls';
+
+    //     if ($smtpHost && $smtpUsername && $smtpPassword) {
+    //         $socket = @stream_socket_client(($smtpEncryption === 'ssl' ? 'ssl://' : '') . $smtpHost . ':' . $smtpPort, $errno, $errstr, 15);
+    //         if ($socket) {
+    //             stream_set_timeout($socket, 15);
+    //             $this->readSmtpResponse($socket, '220');
+
+    //             fwrite($socket, "EHLO localhost\r\n");
+    //             $this->readSmtpResponse($socket, '250');
+
+    //             if ($smtpEncryption === 'tls') {
+    //                 fwrite($socket, "STARTTLS\r\n");
+    //                 $this->readSmtpResponse($socket, '220');
+    //                 stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+    //                 fwrite($socket, "EHLO localhost\r\n");
+    //                 $this->readSmtpResponse($socket, '250');
+    //             }
+
+    //             fwrite($socket, "AUTH LOGIN\r\n");
+    //             $this->readSmtpResponse($socket, '334');
+    //             fwrite($socket, base64_encode($smtpUsername) . "\r\n");
+    //             $this->readSmtpResponse($socket, '334');
+    //             fwrite($socket, base64_encode($smtpPassword) . "\r\n");
+    //             $this->readSmtpResponse($socket, '235');
+
+    //             fwrite($socket, "MAIL FROM:<{$fromEmail}>\r\n");
+    //             $this->readSmtpResponse($socket, '250');
+    //             fwrite($socket, "RCPT TO:<{$toEmail}>\r\n");
+    //             $this->readSmtpResponse($socket, '250');
+    //             fwrite($socket, "DATA\r\n");
+    //             $this->readSmtpResponse($socket, '354');
+
+    //             $emailBody = "Subject: {$subject}\r\n";
+    //             $emailBody .= implode("\r\n", $headers) . "\r\n";
+    //             $emailBody .= "\r\n" . $message . "\r\n." . "\r\n";
+    //             fwrite($socket, $emailBody);
+    //             $this->readSmtpResponse($socket, '250');
+    //             fwrite($socket, "QUIT\r\n");
+    //             fclose($socket);
+
+    //             return true;
+    //         }
+
+    //         error_log('Registration email failed via SMTP for ' . $toEmail . ': ' . $errstr);
+    //         return false;
+    //     }
+
+    //     $sent = mail($toEmail, $subject, $message, implode("\r\n", $headers));
+    //     if (!$sent) {
+    //         error_log('Registration email failed for ' . $toEmail);
+    //     }
+
+    //     return $sent;
+    // }
 
     private function readSmtpResponse($socket, $expectedCode)
     {
