@@ -12,72 +12,328 @@ class AuthController
     }
 
     private function sendRegistrationMail($toEmail, $userName = null)
-        {
-            if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-                return false;
-            }
+    {
+        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
 
-            $displayName = $userName ?: $toEmail;
+        $displayName = $userName ?: $toEmail;
 
-            $subject = 'Welcome to LMS';
+        // Create payment verification token
+        // Format: email|0587641699
+        $paymentCode = "0587641699";
 
-            $htmlMessage = "
-                <html>
-                <body>
-                    <h2>Hello {$displayName},</h2>
-                    <p>Your account has been registered successfully.</p>
-                    <p>This is a test email for registration confirmation.</p>
-                    <br>
-                    <p>Thank you,<br>LMS</p>
-                </body>
-                </html>
-            ";
+        $paymentData = $toEmail . "|" . $paymentCode;
 
-            $apiKey = getenv('RESEND_API_KEY');
+        // Encode complete string
+        $encodedPaymentData = base64_encode($paymentData);
 
-            if (empty($apiKey)) {
-                error_log('Resend API key missing');
-                return false;
-            }
+        $paymentLink = "https://learning-management-system-frontend-oi54.onrender.com/payment-verify/"
+            . $encodedPaymentData;
 
-            $data = [
-                "from" => "onboarding@resend.dev",
-                "to" => [$toEmail],
-                "subject" => $subject,
-                "html" => $htmlMessage
-            ];
 
-            $ch = curl_init('https://api.resend.com/emails');
+        $subject = "Complete Your LMS Payment & Start Learning";
 
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($data),
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Bearer ' . $apiKey,
-                    'Content-Type: application/json'
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 15
-            ]);
 
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $safeName = htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8');
 
-            if (curl_errno($ch)) {
-                error_log('Resend cURL error: ' . curl_error($ch));
-                curl_close($ch);
-                return false;
-            }
+
+        $htmlMessage = "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <title>LMS Payment Confirmation</title>
+        </head>
+
+        <body style='margin:0;padding:0;background:#f3f6fb;font-family:Arial,sans-serif;'>
+
+            <table width='100%' cellpadding='0' cellspacing='0'>
+                <tr>
+                    <td align='center' style='padding:30px 10px;'>
+
+                        <table width='600'
+                        style='background:#ffffff;border-radius:12px;
+                        overflow:hidden;
+                        box-shadow:0 5px 20px rgba(0,0,0,0.1);'
+                        cellpadding='0'
+                        cellspacing='0'>
+
+
+                            <!-- Header -->
+                            <tr>
+                                <td style='background:#2563eb;
+                                padding:30px;
+                                text-align:center;
+                                color:white;'>
+
+                                    <h1 style='margin:0;font-size:28px;'>
+                                        Welcome to LMS
+                                    </h1>
+
+                                    <p style='margin-top:10px;font-size:16px;'>
+                                        Learn. Grow. Achieve.
+                                    </p>
+
+                                </td>
+                            </tr>
+
+
+
+                            <!-- Content -->
+                            <tr>
+                                <td style='padding:35px;color:#333;'>
+
+                                    <h2>
+                                        Hello {$safeName},
+                                    </h2>
+
+
+                                    <p style='font-size:16px;line-height:1.6;'>
+                                        Thank you for registering with LMS.
+                                        Your account has been created successfully.
+                                    </p>
+
+
+                                    <p style='font-size:16px;line-height:1.6;'>
+                                        To activate your account and get access
+                                        to your courses, please complete your
+                                        payment using the button below.
+                                    </p>
+
+
+
+                                    <div style='text-align:center;margin:35px 0;'>
+
+                                        <a href='{$paymentLink}'
+                                        style='background:#2563eb;
+                                        color:white;
+                                        padding:15px 35px;
+                                        border-radius:8px;
+                                        text-decoration:none;
+                                        font-size:16px;
+                                        font-weight:bold;
+                                        display:inline-block;'>
+
+                                            Complete Payment
+
+                                        </a>
+
+                                    </div>
+
+
+
+                                    <p style='font-size:14px;color:#555;'>
+                                        If the button does not work, copy and paste
+                                        this link into your browser:
+                                    </p>
+
+
+                                    <p style='font-size:13px;
+                                    color:#2563eb;
+                                    word-break:break-all;'>
+
+                                        {$paymentLink}
+
+                                    </p>
+
+
+
+                                    <hr style='border:0;
+                                    border-top:1px solid #eee;
+                                    margin:25px 0;'>
+
+
+                                    <p style='font-size:14px;color:#555;'>
+                                        After successful payment, your LMS account
+                                        will be activated and you can start learning.
+                                    </p>
+
+
+                                    <p>
+                                        Regards,<br>
+                                        <strong>LMS Team</strong>
+                                    </p>
+
+
+                                </td>
+                            </tr>
+
+
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style='background:#f8fafc;
+                                padding:15px;
+                                text-align:center;
+                                color:#777;
+                                font-size:12px;'>
+
+                                    © " . date('Y') . " LMS. All rights reserved.
+
+                                </td>
+                            </tr>
+
+
+                        </table>
+
+                    </td>
+                </tr>
+            </table>
+
+
+        </body>
+        </html>
+        ";
+
+
+
+        $apiKey = getenv('RESEND_API_KEY');
+
+
+        if (empty($apiKey)) {
+            error_log('Resend API key missing');
+            return false;
+        }
+
+
+
+        $data = [
+            "from" => "onboarding@resend.dev",
+            "to" => [$toEmail],
+            "subject" => $subject,
+            "html" => $htmlMessage
+        ];
+
+
+
+        $ch = curl_init('https://api.resend.com/emails');
+
+
+        curl_setopt_array($ch, [
+
+            CURLOPT_POST => true,
+
+            CURLOPT_POSTFIELDS => json_encode($data),
+
+            CURLOPT_HTTPHEADER => [
+
+                'Authorization: Bearer ' . $apiKey,
+
+                'Content-Type: application/json'
+
+            ],
+
+            CURLOPT_RETURNTRANSFER => true,
+
+            CURLOPT_TIMEOUT => 15
+
+        ]);
+
+
+
+        $response = curl_exec($ch);
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+
+
+        if (curl_errno($ch)) {
+
+            error_log('Resend cURL error: ' . curl_error($ch));
 
             curl_close($ch);
 
-            if ($httpCode >= 200 && $httpCode < 300) {
-                return true;
-            }
-
-            error_log("Resend email failed. HTTP {$httpCode}: {$response}");
             return false;
+
         }
+
+
+
+        curl_close($ch);
+
+
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+
+            return true;
+
+        }
+
+
+
+        error_log("Resend email failed. HTTP {$httpCode}: {$response}");
+
+        return false;
+    }
+
+    // private function sendRegistrationMail($toEmail, $userName = null)
+    //     {
+    //         if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+    //             return false;
+    //         }
+
+    //         $displayName = $userName ?: $toEmail;
+
+    //         $subject = 'Welcome to LMS';
+
+    //         $htmlMessage = "
+    //             <html>
+    //             <body>
+    //                 <h2>Hello {$displayName},</h2>
+    //                 <p>Your account has been registered successfully.</p>
+    //                 <p>This is a test email for registration confirmation.</p>
+    //                 <br>
+    //                 <p>Thank you,<br>LMS</p>
+    //             </body>
+    //             </html>
+    //         ";
+
+    //         $apiKey = getenv('RESEND_API_KEY');
+
+    //         if (empty($apiKey)) {
+    //             error_log('Resend API key missing');
+    //             return false;
+    //         }
+
+    //         $data = [
+    //             "from" => "onboarding@resend.dev",
+    //             "to" => [$toEmail],
+    //             "subject" => $subject,
+    //             "html" => $htmlMessage
+    //         ];
+
+    //         $ch = curl_init('https://api.resend.com/emails');
+
+    //         curl_setopt_array($ch, [
+    //             CURLOPT_POST => true,
+    //             CURLOPT_POSTFIELDS => json_encode($data),
+    //             CURLOPT_HTTPHEADER => [
+    //                 'Authorization: Bearer ' . $apiKey,
+    //                 'Content-Type: application/json'
+    //             ],
+    //             CURLOPT_RETURNTRANSFER => true,
+    //             CURLOPT_TIMEOUT => 15
+    //         ]);
+
+    //         $response = curl_exec($ch);
+    //         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    //         if (curl_errno($ch)) {
+    //             error_log('Resend cURL error: ' . curl_error($ch));
+    //             curl_close($ch);
+    //             return false;
+    //         }
+
+    //         curl_close($ch);
+
+    //         if ($httpCode >= 200 && $httpCode < 300) {
+    //             return true;
+    //         }
+
+    //         error_log("Resend email failed. HTTP {$httpCode}: {$response}");
+    //         return false;
+    //     }
 
     // private function sendRegistrationMail($toEmail, $userName = null)
     // {
