@@ -683,6 +683,27 @@ class CourseController
             return;
         }
 
+        $userEmail = $_GET['email'] ?? null;
+        $paymentPlan = $_GET['payment_plan'] ?? null;
+        $paidInstallments = (int) ($_GET['paid_installments'] ?? 0);
+        if ($userEmail) {
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User($this->db);
+            $user = $userModel->findByEmail($userEmail);
+            if ($user) {
+                $purchase = $this->purchase->getPurchaseByUserAndCourse($user['id'], $courseId);
+                if ($purchase) {
+                    $paymentPlan = $purchase['payment_plan'] ?? $paymentPlan;
+                    $paidInstallments = (int) ($purchase['paid_installments'] ?? $paidInstallments);
+                }
+            }
+        }
+
+        if ($paymentPlan) {
+            $accessibleModules = $this->course->getAccessibleModulesForPurchase($courseId, $paymentPlan, $paidInstallments);
+            $course['modules'] = $accessibleModules;
+        }
+
         header('Content-Type: application/json');
         echo json_encode(['course' => $course]);
     }
@@ -706,33 +727,24 @@ class CourseController
 
         $user = $userModel->findByEmail($data['email']);
         if (!$user) {
-            if (empty($data['password']) || (empty($data['name']) && empty($data['full_name']))) {
-                http_response_code(404);
-                header('Content-Type: application/json');
-                echo json_encode(['message' => 'User not found']);
-                return;
-            }
-
-            $created = $userModel->create(
-                $data['name'] ?? $data['full_name'] ?? null,
-                $data['email'],
-                $data['password'],
-                $data
-            );
-
-            if (!$created) {
-                http_response_code(500);
-                header('Content-Type: application/json');
-                echo json_encode(['message' => 'Unable to create user profile']);
-                return;
-            }
-
-            $user = $userModel->findByEmail($data['email']);
-        } else {
-            $userModel->syncEnrollmentData($user['id'], $data);
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User not found']);
+            return;
         }
 
-        $ok = $this->purchase->addPurchaseByUserId($user['id'], $data['course_id']);
+        // Optional: keep this if enrollment data should be updated.
+        // $userModel->syncEnrollmentData($user['id'], $data);
+
+        // $ok = $this->purchase->addPurchaseByUserId($user['id'], $data['course_id']);
+
+        $ok = $this->purchase->addPurchaseByUserId(
+            $user['id'],
+            $data['course_id'],
+            $data['payment_plan'] ?? 'one_time',
+            $data['paid_installments'] ?? 1
+        );
+
         if (!$ok) {
             http_response_code(409);
             header('Content-Type: application/json');
@@ -743,6 +755,110 @@ class CourseController
         header('Content-Type: application/json');
         echo json_encode(['message' => 'Purchase recorded']);
     }
+
+    //Update course using updatePurchaseByUserId 
+    public function updatePurchase()
+    {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        if (empty($data['email']) || empty($data['course_id'])) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'email and course_id required']);
+            return;
+        }
+
+        require_once __DIR__ . '/../models/User.php';
+        $userModel = new User($this->db);
+
+        $user = $userModel->findByEmail($data['email']);
+        if (!$user) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User not found']);
+            return;
+        }
+
+
+        $ok = $this->purchase->updatePurchaseByUserId(
+            $user['id'],
+            $data['course_id'],
+            $data['payment_plan'] ?? 'one_time',
+            $data['paid_installments'] ?? 1,
+            $data['status'] ?? 'active'
+        );
+
+        if (!$ok) {
+            http_response_code(409);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Error while updating course purchase']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['message' => 'Purchase recorded']);
+    }
+
+    //remove user creation flow in this its already craeted during enrollment in user service  
+    // public function purchaseCourse()
+    // {
+    //     $data = json_decode(file_get_contents('php://input'), true);
+    //     if (!is_array($data)) {
+    //         $data = [];
+    //     }
+
+    //     if (empty($data['email']) || empty($data['course_id'])) {
+    //         http_response_code(400);
+    //         header('Content-Type: application/json');
+    //         echo json_encode(['message' => 'email and course_id required']);
+    //         return;
+    //     }
+
+    //     require_once __DIR__ . '/../models/User.php';
+    //     $userModel = new User($this->db);
+
+    //     $user = $userModel->findByEmail($data['email']);
+    //     if (!$user) {
+    //         if (empty($data['password']) || (empty($data['name']) && empty($data['full_name']))) {
+    //             http_response_code(404);
+    //             header('Content-Type: application/json');
+    //             echo json_encode(['message' => 'User not found']);
+    //             return;
+    //         }
+
+    //         $created = $userModel->create(
+    //             $data['name'] ?? $data['full_name'] ?? null,
+    //             $data['email'],
+    //             $data['password'],
+    //             $data
+    //         );
+
+    //         if (!$created) {
+    //             http_response_code(500);
+    //             header('Content-Type: application/json');
+    //             echo json_encode(['message' => 'Unable to create user profile']);
+    //             return;
+    //         }
+
+    //         $user = $userModel->findByEmail($data['email']);
+    //     } else {
+    //         $userModel->syncEnrollmentData($user['id'], $data);
+    //     }
+
+    //     $ok = $this->purchase->addPurchaseByUserId($user['id'], $data['course_id']);
+    //     if (!$ok) {
+    //         http_response_code(409);
+    //         header('Content-Type: application/json');
+    //         echo json_encode(['message' => 'Already purchased or error']);
+    //         return;
+    //     }
+
+    //     header('Content-Type: application/json');
+    //     echo json_encode(['message' => 'Purchase recorded']);
+    // }
 
     public function adminAddCourseUser()
     {
@@ -879,5 +995,40 @@ class CourseController
         $courseIds = $this->purchase->getCourseIdsByUserId($user['id']);
         header('Content-Type: application/json');
         echo json_encode(['course_ids' => $courseIds]);
+    }
+
+    public function getUserPurchaseDetails()
+    {
+        $email = $_GET['email'] ?? null;
+        $courseId = $_GET['course_id'] ?? null;
+
+        if (!$email || !$courseId) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'email and course_id query parameters are required']);
+            return;
+        }
+
+        require_once __DIR__ . '/../models/User.php';
+        $userModel = new User($this->db);
+
+        $user = $userModel->findByEmail($email);
+        if (!$user) {
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'User not found']);
+            return;
+        }
+
+        $purchase = $this->purchase->getPurchaseDetailsByUserAndCourse($user['id'], $courseId);
+        if (!$purchase) {
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo json_encode(['message' => 'Purchase not found for this user and course']);
+            return;
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['purchase' => $purchase]);
     }
 }

@@ -11,10 +11,9 @@ class Course
 
     public function getAll()
     {
-        //Updated the TRUE issue
-        //Ganesh L G
-        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at FROM courses WHERE TRUE";
-        // By default callers can append a WHERE clause externally; keep signature simple.
+        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at,
+                single_pay_modules, two_pay_first_modules, two_pay_second_modules, three_pay_first_modules, three_pay_second_modules, three_pay_third_modules
+                FROM courses WHERE TRUE";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -22,7 +21,9 @@ class Course
 
     public function findById($id)
     {
-        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at FROM courses WHERE id = :id";
+        $sql = "SELECT id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at,
+                single_pay_modules, two_pay_first_modules, two_pay_second_modules, three_pay_first_modules, three_pay_second_modules, three_pay_third_modules
+                FROM courses WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -30,7 +31,7 @@ class Course
 
     public function findModulesByCourseId($courseId)
     {
-        $sql = "SELECT id, course_id, title, description, video_url, type, live_link, recorded_video_url FROM modules WHERE course_id = :course_id ORDER BY id";
+        $sql = "SELECT id, course_id, title, description, video_url, type, live_link, recorded_video_url, module_order FROM modules WHERE course_id = :course_id ORDER BY module_order ASC, id ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['course_id' => $courseId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -97,10 +98,52 @@ class Course
         return $course;
     }
 
+    public function getAccessibleModulesForPurchase($courseId, $paymentPlan, $paidInstallments)
+    {
+        $course = $this->findById($courseId);
+        if (!$course) {
+            return [];
+        }
+
+        $unlockCount = 0;
+        if ($paymentPlan === 'one_time') {
+            $unlockCount = (int) ($course['single_pay_modules'] ?? 0);
+        } elseif ($paymentPlan === 'two_installments') {
+            if ((int) $paidInstallments >= 2) {
+                $unlockCount = (int) ($course['two_pay_second_modules'] ?? 0);
+            } elseif ((int) $paidInstallments >= 1) {
+                $unlockCount = (int) ($course['two_pay_first_modules'] ?? 0);
+            }
+        } elseif ($paymentPlan === 'three_installments') {
+            if ((int) $paidInstallments >= 3) {
+                $unlockCount = (int) ($course['three_pay_third_modules'] ?? 0);
+            } elseif ((int) $paidInstallments >= 2) {
+                $unlockCount = (int) ($course['three_pay_second_modules'] ?? 0);
+            } elseif ((int) $paidInstallments >= 1) {
+                $unlockCount = (int) ($course['three_pay_first_modules'] ?? 0);
+            }
+        } else {
+            $unlockCount = (int) ($course['single_pay_modules'] ?? 0);
+        }
+
+        $modules = $this->findModulesByCourseId($courseId);
+        $accessible = [];
+        foreach ($modules as $module) {
+            $order = (int) ($module['module_order'] ?? 0);
+            if ($order > 0 && $order <= $unlockCount) {
+                $accessible[] = $module;
+            }
+        }
+
+        return $accessible;
+    }
+
     public function createCourse($data)
     {
-        $sql = "INSERT INTO courses(id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at)
-                VALUES(:id, :title, :description, :thumbnail_url, :price, :duration_hours, :instructor_name, :is_published, :published_at)";
+        $sql = "INSERT INTO courses(id, title, description, thumbnail_url, price, duration_hours, instructor_name, is_published, published_at,
+                single_pay_modules, two_pay_first_modules, two_pay_second_modules, three_pay_first_modules, three_pay_second_modules, three_pay_third_modules)
+                VALUES(:id, :title, :description, :thumbnail_url, :price, :duration_hours, :instructor_name, :is_published, :published_at,
+                :single_pay_modules, :two_pay_first_modules, :two_pay_second_modules, :three_pay_first_modules, :three_pay_second_modules, :three_pay_third_modules)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             'id' => $data['id'],
@@ -112,6 +155,12 @@ class Course
             'instructor_name' => $data['instructor_name'] ?? null,
             'is_published' => $data['is_published'] ?? 0,
             'published_at' => $data['published_at'] ?? null,
+            'single_pay_modules' => isset($data['single_pay_modules']) ? (int) $data['single_pay_modules'] : 0,
+            'two_pay_first_modules' => isset($data['two_pay_first_modules']) ? (int) $data['two_pay_first_modules'] : null,
+            'two_pay_second_modules' => isset($data['two_pay_second_modules']) ? (int) $data['two_pay_second_modules'] : null,
+            'three_pay_first_modules' => isset($data['three_pay_first_modules']) ? (int) $data['three_pay_first_modules'] : null,
+            'three_pay_second_modules' => isset($data['three_pay_second_modules']) ? (int) $data['three_pay_second_modules'] : null,
+            'three_pay_third_modules' => isset($data['three_pay_third_modules']) ? (int) $data['three_pay_third_modules'] : null,
         ]);
     }
 
@@ -119,7 +168,8 @@ class Course
     {
         $fields = [];
         $params = ['id' => $data['id']];
-        $allowed = ['title','description','thumbnail_url','price','duration_hours','instructor_name','is_published','published_at'];
+        $allowed = ['title','description','thumbnail_url','price','duration_hours','instructor_name','is_published','published_at',
+            'single_pay_modules','two_pay_first_modules','two_pay_second_modules','three_pay_first_modules','three_pay_second_modules','three_pay_third_modules'];
         foreach ($allowed as $col) {
             if (array_key_exists($col, $data)) {
                 $fields[] = "$col = :$col";
@@ -175,8 +225,8 @@ class Course
 
     public function createModule($data)
     {
-        $sql = "INSERT INTO modules(id, course_id, title, description, video_url, type, live_link, recorded_video_url) 
-                VALUES(:id, :course_id, :title, :description, :video_url, :type, :live_link, :recorded_video_url)";
+        $sql = "INSERT INTO modules(id, course_id, title, description, video_url, type, live_link, recorded_video_url, module_order) 
+                VALUES(:id, :course_id, :title, :description, :video_url, :type, :live_link, :recorded_video_url, :module_order)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             'id' => $data['id'],
@@ -187,6 +237,7 @@ class Course
             'type' => $data['type'] ?? null,
             'live_link' => $data['live_link'] ?? null,
             'recorded_video_url' => $data['recorded_video_url'] ?? null,
+            'module_order' => isset($data['module_order']) ? (int) $data['module_order'] : 0,
         ]);
     }
 
@@ -194,7 +245,7 @@ class Course
     {
         $fields = [];
         $params = ['id' => $data['id']];
-        $allowed = ['course_id', 'title', 'description', 'video_url', 'type', 'live_link', 'recorded_video_url'];
+        $allowed = ['course_id', 'title', 'description', 'video_url', 'type', 'live_link', 'recorded_video_url', 'module_order'];
         foreach ($allowed as $col) {
             if (array_key_exists($col, $data)) {
                 $fields[] = "$col = :$col";

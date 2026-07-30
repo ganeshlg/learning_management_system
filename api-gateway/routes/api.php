@@ -456,11 +456,25 @@ if ($uri === '/api/purchase' && $method === 'POST') {
     exit;
 }
 
+// UPDATE PURCHASE COURSE (create purchase)
+if ($uri === '/api/purchase' && $method === 'PUT') {
+    proxyRequest($services['user_service'] . '/purchase');
+    exit;
+}
+
 // GET PURCHASED COURSE IDS (query param: email)
 if ($uri === '/api/purchases' && $method === 'GET') {
     // forward query string
     $qs = $_SERVER['QUERY_STRING'] ?? '';
     $target = $services['user_service'] . '/purchases' . ($qs ? '?' . $qs : '');
+    proxyRequest($target);
+    exit;
+}
+
+// GET PURCHASE DETAILS BY USER EMAIL AND COURSE ID
+if ($uri === '/api/purchases/details' && $method === 'GET') {
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    $target = $services['user_service'] . '/purchases/details' . ($qs ? '?' . $qs : '');
     proxyRequest($target);
     exit;
 }
