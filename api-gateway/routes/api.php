@@ -218,6 +218,17 @@ function proxyVideo($url)
 // ROUTES
 // ================================
 
+if ($uri === '/smtp-test' && $method === 'GET') {
+     $connection = fsockopen('smtp.gmail.com', 587, $errno, $errstr, 10);
+
+    if (!$connection) {
+        echo "$errno - $errstr";
+    }
+
+    echo "SMTP reachable";
+    exit;
+}
+
 // REGISTER
 if ($uri === '/api/register' && $method === 'POST') {
     proxyRequest($services['user_service'] . '/register');
